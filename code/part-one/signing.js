@@ -3,7 +3,6 @@
 const secp256k1 = require('secp256k1');
 const { randomBytes, createHash } = require('crypto');
 
-
 /**
  * A function which generates a new random Secp256k1 private key, returning
  * it as a 64 character hexadecimal string.
@@ -13,9 +12,11 @@ const { randomBytes, createHash } = require('crypto');
  *   console.log(privateKey);
  *   // 'e291df3eede7f0c520fddbe5e9e53434ff7ef3c0894ed9d9cbcb6596f1cfe87e'
  */
-const createPrivateKey = () => {
-  // Enter your solution here
 
+const createPrivateKey = () => {
+  let privateKey = randomBytes(32);
+  privateKey = privateKey.toString('hex');
+  return privateKey;
 };
 
 /**
@@ -32,8 +33,10 @@ const createPrivateKey = () => {
  *   Buffers), not hex strings! You'll have to convert the private key.
  */
 const getPublicKey = privateKey => {
-  // Your code here
-
+  privateKey = Buffer.from(privateKey, 'hex');
+  let publicKey = secp256k1.publicKeyCreate(privateKey);
+  publicKey = publicKey.toString('hex');
+  return publicKey;
 };
 
 /**
@@ -50,9 +53,14 @@ const getPublicKey = privateKey => {
  *   not the message itself!
  */
 const sign = (privateKey, message) => {
-  // Your code here
-
+  let hashedMessage = createHash('sha256').update(message).digest('hex');
+  hashedMessage = Buffer.from(hashedMessage, 'hex');
+  privateKey = Buffer.from(privateKey, 'hex');
+  let signature = secp256k1.sign(hashedMessage, privateKey).toString('hex');
+  return signature;
 };
+
+console.log(sign('e291df3eede7f0c520fddbe5e9e53434ff7ef3c0894ed9d9cbcb6596f1cfe87e', 'hello world!'));
 
 /**
  * A function which takes a hex public key, a string message, and a hex
@@ -65,8 +73,11 @@ const sign = (privateKey, message) => {
  *   // false
  */
 const verify = (publicKey, message, signature) => {
-  // Your code here
-
+  publicKey = Buffer.from(publicKey, 'hex');
+  signature = Buffer.from(signature, 'hex');
+  let hashedMessage = createHash('sha256').update(message).digest('hex');
+  let verified = secp256k1.verify(hashedMessage, signature, publicKey);
+  return verified;
 };
 
 module.exports = {

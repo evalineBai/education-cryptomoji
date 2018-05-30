@@ -59,7 +59,7 @@ describe('Signing module', function() {
   });
 
   describe('sign', function() {
-    const message = randomBytes(16);
+    const message = randomBytes(16).toString('hex');
     let publicKey = null;
     let signature = null;
 
@@ -85,7 +85,7 @@ describe('Signing module', function() {
   });
 
   describe('verify', function() {
-    const message = randomBytes(16);
+    const message = randomBytes(16).toString('hex');
     let publicKey = null;
     let signature = null;
 
@@ -112,7 +112,7 @@ describe('Signing module', function() {
     });
 
     it('should reject a signature with a mismatched message', function() {
-      const message = randomBytes(16);
+      const message = randomBytes(16).toString('hex');
       const isValid = signing.verify(publicKey, message, signature);
 
       expect(isValid).to.be.false;
