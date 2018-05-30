@@ -3,12 +3,6 @@
 const secp256k1 = require('secp256k1');
 const { randomBytes, createHash } = require('crypto');
 
-// Returns a Buffer SHA-256 hash of a string or Buffer
-const sha256 = msg => createHash('sha256').update(msg).digest();
-
-// Converts a hex string to a Buffer
-const toBytes = hex => Buffer.from(hex, 'hex');
-
 /**
  * A function which generates a new random Secp256k1 private key, returning
  * it as a 64 character hexadecimal string.
@@ -40,6 +34,7 @@ const createPrivateKey = () => {
  *   Remember that the secp256k1 library expects raw bytes (i.e Node.js
  *   Buffers), not hex strings! You'll have to convert the private key.
  */
+
 const getPublicKey = privateKey => {
   privateKey = Buffer.from(privateKey, 'hex');
   let publicKey = secp256k1.publicKeyCreate(privateKey).toString('hex');
@@ -59,6 +54,7 @@ const getPublicKey = privateKey => {
  *   Remember that you need to sign a SHA-256 hash of the message,
  *   not the message itself!
  */
+
 const sign = (privateKey, message) => {
   message = createHash('sha256').update(message).digest();
   privateKey = Buffer.from(privateKey, 'hex');
@@ -76,6 +72,7 @@ const sign = (privateKey, message) => {
  *   console.log( verify(publicKey, 'Hello World?', signature) );
  *   // false
  */
+
 const verify = (publicKey, message, signature) => {
   publicKey = Buffer.from(publicKey, 'hex');
   signature = Buffer.from(signature, 'hex');
