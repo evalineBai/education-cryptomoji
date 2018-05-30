@@ -3,6 +3,12 @@
 const secp256k1 = require('secp256k1');
 const { randomBytes, createHash } = require('crypto');
 
+// Returns a Buffer SHA-256 hash of a string or Buffer
+const sha256 = msg => createHash('sha256').update(msg).digest();
+
+// Converts a hex string to a Buffer
+const toBytes = hex => Buffer.from(hex, 'hex');
+
 /**
  * A function which generates a new random Secp256k1 private key, returning
  * it as a 64 character hexadecimal string.
@@ -14,9 +20,11 @@ const { randomBytes, createHash } = require('crypto');
  */
 
 const createPrivateKey = () => {
-  let privateKey = randomBytes(32);
-  privateKey = privateKey.toString('hex');
-  return privateKey;
+  let privateKey = null;
+  do {
+    privateKey = randomBytes(32);
+  } while (!secp256k1.privateKeyVerify(privateKey));
+  return privateKey.toString('hex');
 };
 
 /**
@@ -34,8 +42,7 @@ const createPrivateKey = () => {
  */
 const getPublicKey = privateKey => {
   privateKey = Buffer.from(privateKey, 'hex');
-  let publicKey = secp256k1.publicKeyCreate(privateKey);
-  publicKey = publicKey.toString('hex');
+  let publicKey = secp256k1.publicKeyCreate(privateKey).toString('hex');
   return publicKey;
 };
 
@@ -53,14 +60,11 @@ const getPublicKey = privateKey => {
  *   not the message itself!
  */
 const sign = (privateKey, message) => {
-  let hashedMessage = createHash('sha256').update(message).digest('hex');
-  hashedMessage = Buffer.from(hashedMessage, 'hex');
+  message = createHash('sha256').update(message).digest();
   privateKey = Buffer.from(privateKey, 'hex');
-  let signature = secp256k1.sign(hashedMessage, privateKey).toString('hex');
-  return signature;
+  const { signature } = secp256k1.sign(message, privateKey);
+  return signature.toString('hex');
 };
-
-console.log(sign('e291df3eede7f0c520fddbe5e9e53434ff7ef3c0894ed9d9cbcb6596f1cfe87e', 'hello world!'));
 
 /**
  * A function which takes a hex public key, a string message, and a hex
@@ -75,8 +79,8 @@ console.log(sign('e291df3eede7f0c520fddbe5e9e53434ff7ef3c0894ed9d9cbcb6596f1cfe8
 const verify = (publicKey, message, signature) => {
   publicKey = Buffer.from(publicKey, 'hex');
   signature = Buffer.from(signature, 'hex');
-  let hashedMessage = createHash('sha256').update(message).digest('hex');
-  let verified = secp256k1.verify(hashedMessage, signature, publicKey);
+  message = createHash('sha256').update(message).digest();
+  let verified = secp256k1.verify(message, signature, publicKey);
   return verified;
 };
 
