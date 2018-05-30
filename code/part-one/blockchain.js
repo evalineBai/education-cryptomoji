@@ -3,7 +3,6 @@
 const { createHash } = require('crypto');
 const signing = require('./signing');
 
-
 /**
  * A simple signed Transaction class for sending funds from the signer to
  * another public key.
@@ -22,8 +21,11 @@ class Transaction {
    *     other properties, signed by the passed in private key
    */
   constructor(privateKey, recipient, amount) {
-    // Enter your solution here
-
+    this.source = signing.getPublicKey(privateKey);
+    this.recipient = recipient;
+    this.amount = amount;
+    const message = this.source + this.recipient + this.amount;
+    this.signature = signing.sign(privateKey, message);
   }
 }
 
