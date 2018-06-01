@@ -9,8 +9,12 @@ const signing = require('./signing');
  * amounts, were improperly signed, or that have been modified since signing.
  */
 const isValidTransaction = transaction => {
-  // Enter your solution here
-
+  const message = transaction.source + transaction.recipient + transaction.amount;
+  const verified = signing.verify(transaction.source, message, transaction.signature);
+  if (transaction.amount < 0 || verified === false) {
+    return false;
+  }
+  return true;
 };
 
 /**
@@ -19,8 +23,13 @@ const isValidTransaction = transaction => {
  * or if they contain any invalid transactions.
  */
 const isValidBlock = block => {
-  // Your code here
-
+  const transString = block.transactions.map(trans => trans.signature).join('');
+  const stringToHash = block.previousHash + transString + block.nonce;
+  const hash = createHash('sha512').update(stringToHash).digest('hex');
+  if (block.hash !== hash) {
+    return false;
+  }
+  return block.transactions.every(isValidTransaction);
 };
 
 /**
@@ -35,8 +44,14 @@ const isValidBlock = block => {
  *   - contains any invalid transactions
  */
 const isValidChain = blockchain => {
-  // Your code here
-
+  if (!blockchain.blocks[0] || blockchain.blocks[0].previousHash !== null) {
+    return false;
+  }
+  const minusGenesis = blockchain.blocks.slice(1);
+  minusGenesis.forEach(block => {
+    // TO DO
+  });
+  return minusGenesis.every(isValidBlock);
 };
 
 /**
