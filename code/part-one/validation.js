@@ -44,14 +44,16 @@ const isValidBlock = block => {
  *   - contains any invalid transactions
  */
 const isValidChain = blockchain => {
-  if (!blockchain.blocks[0] || blockchain.blocks[0].previousHash !== null) {
+  if (blockchain.blocks[0].previousHash !== null) {
     return false;
   }
-  const minusGenesis = blockchain.blocks.slice(1);
-  minusGenesis.forEach(block => {
-    // TO DO
-  });
-  return minusGenesis.every(isValidBlock);
+  if (blockchain.blocks.slice(1).some((block, i) => block.previousHash !== blockchain.blocks[i].hash)) {
+    return false;
+  }
+  if (blockchain.blocks.some(block => !isValidBlock(block))) {
+    return false;
+  }
+  return blockchain.blocks.map(block => block.transactions).reduce((flat, txns) => flat.concat(txns), []).every(isValidTransaction);
 };
 
 /**
@@ -60,8 +62,7 @@ const isValidChain = blockchain => {
  * (in theory) make the blockchain fail later validation checks;
  */
 const breakChain = blockchain => {
-  // Your code here
-
+  return blockchain.blocks[0].previousHash = 'This is a phony hash!';
 };
 
 module.exports = {
