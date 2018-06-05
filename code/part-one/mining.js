@@ -18,8 +18,18 @@ class MineableTransaction {
    * We're creating something out of nothing.
    */
   constructor(privateKey, recipient = null, amount) {
-    // Enter your solution here
-
+    const publicKey = signing.getPublicKey(privateKey);
+    this.amount = amount;
+    
+    if (recipient === null) {
+      this.source = null;
+      this.recipient = publicKey;
+    } else {
+      this.source = publicKey;
+      this.recipient = recipient;
+    }
+    const message = this.source + this.recipient + this.amount;
+    this.signature = signing.sign(privateKey, message);
   }
 }
 
@@ -34,8 +44,9 @@ class MineableBlock extends Block {
    * become valid after it is mined.
    */
   constructor(transactions, previousHash) {
-    // Your code here
-
+    super(transactions, previousHash);
+    this.hash = '';
+    this.nonce = null;
   }
 }
 
@@ -62,8 +73,12 @@ class MineableChain extends Blockchain {
    *   This will only be used internally.
    */
   constructor() {
-    // Your code here
-
+    super();
+    const genesis = new MineableBlock([], null);
+    this.blocks = [genesis];
+    this.difficulty = 2;
+    this.reward = 100;
+    this._pendingTrans = [];
   }
 
   /**
@@ -78,8 +93,7 @@ class MineableChain extends Blockchain {
    * mineable transaction and store it until it can be mined.
    */
   addTransaction(transaction) {
-    // Your code here
-
+    this._pendingTrans.push(transaction);
   }
 
   /**
@@ -97,8 +111,19 @@ class MineableChain extends Blockchain {
    *   Don't forget to clear your pending transactions after you're done.
    */
   mine(privateKey) {
-    // Your code here
+    const reward = new MineableTransaction(privateKey, null, this.reward);
+    const pendingTransactions = this._pendingTrans.concat(reward);
+    const previousHash = this.getHeadBlock().hash;
+    const block = new Block(pendingTransactions, previousHash);
+    const zeros = '0'.repeat(this.difficulty);
+    let nonce = 0;
 
+    while (block.hash.slice(0, this.difficulty) !== zeros) {
+      block.calculateHash(nonce);
+      nonce++;
+    }
+    this.blocks.push(block);
+    this._pendingTrans = [];
   }
 }
 
@@ -117,9 +142,95 @@ class MineableChain extends Blockchain {
  *   - any public key that ever goes into a negative balance by sending
  *     funds they don't have
  */
-const isValidMineableChain = blockchain => {
-  // Your code here
 
+/* MY VERSION:
+
+const isValidMineableChain = blockchain => {
+  const zeros = '0'.repeat(blockchain.difficulty);
+  const checkZeros = block => {
+    if (block.hash.slice(0, blockchain.difficulty) !== zeros) {
+      return false;
+    }
+    return true;
+  };
+  if (blockchain.blocks.slice(1).some(block => !checkZeros(block))) {
+    return false;
+  }
+  const checkNull = block => {
+    let count = 0;
+    block.transactions.forEach(txn => {
+      if (txn.source === null) {
+        count++;
+      }
+      if (count > 1) {
+        return false;
+      }
+    });
+  };
+  if (blockchain.blocks.some(block => !checkNull(block))) {
+    return false;
+  }
+  const checkReward = block => {
+    const rewards = block.transactions.filter(txn => !txn.source);
+    if (rewards.length > 1) {
+      return false;
+    }
+    if (rewards[0] && rewards[0].amount !== blockchain.reward) {
+      return false;
+    }
+  };
+
+  const balances = {};
+
+  if (blockchain.blocks.some(block => !checkReward(block))) {
+    return false;
+  }
+  for (const { source, recipient, amount } of blockchain.blocks.transactions) {
+    if (source) {
+      balances[source] = balances[source] || 0;
+      balances[source] = balances[source] - amount;
+      if (balances[source] < 0) {
+        return false;
+      }
+    }
+    balances[recipient] = balances[recipient] || 0;
+    balances[recipient] = balances[recipient] + amount;
+  }
+
+  return true;
+};
+*/
+
+const isValidMineableChain = blockchain => {
+  const zeros = '0'.repeat(blockchain.difficulty);
+  const { blocks } = blockchain;
+
+  if (blocks.slice(1).some(b => b.hash.slice(0, zeros.length) !== zeros)) {
+    return false;
+  }
+  const balances = {};
+  for (const { transactions } of blocks) {
+    const rewards = transactions.filter(txn => !txn.source);
+    if (rewards.length > 1) {
+      return false;
+    }
+    if (rewards[0] && rewards[0].amount !== blockchain.reward) {
+      return false;
+    }
+    for (const { source, recipient, amount } of transactions) {
+      if (source) {
+        balances[source] = balances[source] || 0;
+        balances[source] = balances[source] - amount;
+
+        if (balances[source] < 0) {
+          return false;
+        }
+      }
+      balances[recipient] = balances[recipient] || 0;
+      balances[recipient] = balances[recipient] + amount;
+    }
+  }
+  return true;
 };
 
 module.exports = {
