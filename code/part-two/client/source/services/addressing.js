@@ -1,6 +1,5 @@
 import { createHash } from 'crypto';
 
-
 const NAMESPACE = '5f4d76';
 const PREFIXES = {
   COLLECTION: '00',
@@ -8,6 +7,15 @@ const PREFIXES = {
   SIRE_LISTING: '02',
   OFFER: '03'
 };
+
+const ADDRESS_LENGTH = 70;
+
+Object.keys(PREFIXES).forEach(p => { PREFIXES[p] = NAMESPACE + PREFIXES[p]; });
+
+const hash = (str, length) => {
+  return createHash('sha512').update(str).digest('hex').slice(0, length);
+};
+
 /**
  * A function which optionally takes a public key, and returns a full or
  * partial collection address.
@@ -24,8 +32,10 @@ const PREFIXES = {
  *   // '5f4d7600ecd7ef459ec82a01211983551c3ed82169ca5fa0703ec98e17f9b534ffb797'
  */
 export const getCollectionAddress = (publicKey = null) => {
-  // Enter your solution here
-
+  if (publicKey === null) {
+    return PREFIXES.COLLECTION;
+  }
+  return PREFIXES.COLLECTION + hash(publicKey, 62);
 };
 
 /**
@@ -41,8 +51,13 @@ export const getCollectionAddress = (publicKey = null) => {
  *   console.log(ownerPrefix);  // '5f4d7601ecd7ef45'
  */
 export const getMojiAddress = (ownerKey = null, dna = null) => {
-  // Your code here
-
+  if (ownerKey === null && dna === null) {
+    return PREFIXES.MOJI;
+  } else if (ownerKey && dna === null) {
+    return PREFIXES.MOJI + hash(ownerKey, 8);
+  } else {
+    return PREFIXES.MOJI + hash(ownerKey, 8) + hash(dna, 54);
+  }
 };
 
 /**
@@ -53,7 +68,10 @@ export const getMojiAddress = (ownerKey = null, dna = null) => {
  * otherwise returns the full address.
  */
 export const getSireAddress = (ownerKey = null) => {
-  // Your code here
+  if (ownerKey === null) {
+    return PREFIXES.SIRE_LISTING;
+  }
+  return PREFIXES.SIRE_LISTING + hash(ownerKey, 62);
 
 };
 
@@ -70,6 +88,20 @@ export const getSireAddress = (ownerKey = null) => {
  * The identifiers may be either moji dna, or moji addresses.
  */
 export const getOfferAddress = (ownerKey = null, moji = null) => {
-  // Your code here
+  if (ownerKey === null) {
+    return PREFIXES.OFFER;
+  } else if (ownerKey && moji === null) {
+    return PREFIXES.OFFER + hash(ownerKey, 8);
+  }
 
+  if (!Array.isArray(moji)) {
+    moji = [moji];
+  }
+  const addresses = moji.map(addressOrDna => {
+    if (addressOrDna.length === ADDRESS_LENGTH) {
+      return addressOrDna;
+    }
+    return getMojiAddress(ownerKey, addressOrDna);
+  });
+  return PREFIXES.OFFER + hash(ownerKey, 8) + hash(addresses.sort().join(''), 54);
 };
