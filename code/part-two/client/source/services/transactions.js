@@ -27,9 +27,29 @@ const NAMESPACE = '5f4d76';
  *
  *   Also, don't forget to encode your payload!
  */
-export const createTransaction = (privateKey, payload) => {
-  // Enter your solution here
 
+const hash = str => createHash('sha512').update(str).digest('hex');
+const getNonce = () => (Math.random() * 10 ** 18).toString(36);
+
+export const createTransaction = (privateKey, payload) => {
+  const publicKey = getPublicKey(privateKey);
+  const encodedPayload = encode(payload);
+  const header = TransactionHeader.encode({
+    signerPublicKey: publicKey,
+    batcherPublicKey: publicKey,
+    familyName: FAMILY_NAME,
+    familyVersion: FAMILY_VERSION,
+    inputs: [ NAMESPACE ],
+    outputs: [ NAMESPACE ],
+    nonce: getNonce(),
+    payloadSha512: hash(encodedPayload)
+  }).finish();
+  
+  return Transaction.create({
+    header,
+    headerSignature: sign(privateKey, header),
+    payload: encodedPayload
+  });
 };
 
 /**
@@ -40,8 +60,20 @@ export const createTransaction = (privateKey, payload) => {
  * with no array.
  */
 export const createBatch = (privateKey, transactions) => {
-  // Your code here
+  const publicKey = getPublicKey(privateKey);
+  if (!Array.isArray(transactions)) {
+    transactions = [transactions];
+  }
+  const header = BatchHeader.encode({
+    signerPublicKey: publicKey,
+    transactionIds: transactions.map(txn => txn.headerSignature)
+  }).finish();
 
+  return Batch.create({
+    header,
+    headerSignature: sign(privateKey, header),
+    transactions
+  });
 };
 
 /**
@@ -71,6 +103,10 @@ export const encodeBatches = batches => {
  * multiple payloads in an array.
  */
 export const encodeAll = (privateKey, payloads) => {
-  // Your code here
-
+  if (!Array.isArray(payloads)) {
+    payloads = [payloads];
+  }
+  const transactions = payloads.map(p => createTransaction(privateKey, p));
+  const batch = createBatch(privateKey, transactions);
+  return encodeBatches(batch);
 };
